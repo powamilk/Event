@@ -4,6 +4,7 @@ using BaseSolution.Infrastructure.Implements.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Localization;
 
 namespace BaseSolution.Infrastructure.Extensions
 {
@@ -22,6 +23,20 @@ namespace BaseSolution.Infrastructure.Extensions
                 // Configure your DbContext options here
                 options.UseSqlServer(configuration.GetConnectionString("DbConnection"));
             });
+
+            services.AddDbContextPool<AppDbReadOnlyContext>(options =>
+            {
+                // Configure your DbContext options here
+                options.UseSqlServer(configuration.GetConnectionString("DbConnection"));
+            });
+
+            services.AddDbContextPool<AppDbReadWriteContext>(options =>
+            {
+                // Configure your DbContext options here
+                options.UseSqlServer(configuration.GetConnectionString("DbConnection"));
+            });
+
+            services.AddTransient<IStringLocalizerFactory, ResourceManagerStringLocalizerFactory>();
 
             services.AddTransient<ILocalizationService, LocalizationService>();
 
