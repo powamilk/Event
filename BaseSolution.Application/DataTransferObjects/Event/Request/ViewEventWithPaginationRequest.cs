@@ -7,9 +7,10 @@ using System.Threading.Tasks;
 
 namespace BaseSolution.Application.DataTransferObjects.Event.Request
 {
-    public class ViewEventWithPaginationReques
+    public class ViewEventWithPaginationRequest
     {
-        public string? Name { get; set; }
-        public EntityStatus? Status { get; set; }
+        public int PageNumber { get; set; } = 1;
+        public int PageSize { get; set; } = 10;
+        public string? SearchTerm { get; set; }
     }
 }

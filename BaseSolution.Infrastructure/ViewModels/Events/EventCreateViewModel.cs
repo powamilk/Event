@@ -17,38 +17,40 @@ namespace BaseSolution.Infrastructure.ViewModels.Events
     {
         private readonly IEventReadWriteRepository _eventReadWriteRepository;
         private readonly ILocalizationService _localizationService;
+        private readonly IMapper _mapper; 
 
-        public EventCreateViewModel(IEventReadWriteRepository eventReadWriteRepository, ILocalizationService localizationService)
+        public EventCreateViewModel(IEventReadWriteRepository eventReadWriteRepository, ILocalizationService localizationService, IMapper mapper)
         {
             _eventReadWriteRepository = eventReadWriteRepository;
             _localizationService = localizationService;
+            _mapper = mapper; 
         }
 
         public override async Task HandleAsync(EventCreateRequest request, CancellationToken cancellationToken)
         {
-            var eventEntity = new Event
-            {
-                Name = request.Name,
-                Description = request.Description,
-                Location = request.Location,
-                StartTime = request.StartTime,
-                EndTime = request.EndTime,
-                MaxParticipants = request.MaxParticipants
-            };
+            var eventEntity = _mapper.Map<Event>(request);
 
             var result = await _eventReadWriteRepository.AddEventAsync(eventEntity, cancellationToken);
 
             if (result.Success)
             {
-                Data = result.Data; 
+                Data = eventEntity;
                 Success = true;
             }
             else
             {
                 Success = false;
-                ErrorItems = result.Errors;
-                Message = result.Message;
+                ErrorItems = result.Errors ?? new List<ErrorItem>
+        {
+            new ErrorItem
+            {
+                FieldName = "EventCreate",
+                Error = "Unknown error occurred during event creation"
+            }
+        };
+                Message = result.Message ?? "Event creation failed";
             }
         }
+
     }
 }

@@ -22,7 +22,7 @@ namespace BaseSolution.Infrastructure.Database.AppDbContext
         }
 
         public DbSet<Event> Events { get; set; }
-        //public DbSet<Organizer> Organizers { get; set; }
+        public DbSet<Organizer> Organizers { get; set; }
         //public DbSet<Participant> Participants { get; set; }
         //public DbSet<Registration> Registrations { get; set; }
         //public DbSet<Review> Reviews { get; set; }

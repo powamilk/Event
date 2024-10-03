@@ -1,5 +1,6 @@
 ﻿using BaseSolution.Application.DataTransferObjects.Event;
 using BaseSolution.Application.Interfaces.Repositories.ReadOnly;
+using BaseSolution.Application.ValueObjects.Common;
 using BaseSolution.Application.ValueObjects.Response;
 using BaseSolution.Infrastructure.Database.AppDbContext;
 using Microsoft.EntityFrameworkCore;
@@ -22,41 +23,75 @@ namespace BaseSolution.Infrastructure.Implements.Repositories.ReadOnly
 
         public async Task<RequestResult<EventDto>> GetEventByIdAsync(int id, CancellationToken cancellationToken)
         {
-            var eventEntity = await _dbContext.Events.AsNoTracking().FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
-            if (eventEntity == null)
+            try
             {
-                return RequestResult<EventDto>.Fail("Event not found");
+                var eventEntity = await _dbContext.Events
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
+
+                if (eventEntity == null)
+                {
+                    return RequestResult<EventDto>.Fail("Sự kiện không tồn tại.");
+                }
+
+                var eventDto = new EventDto
+                {
+                    Id = eventEntity.Id,
+                    Name = eventEntity.Name,
+                    Description = eventEntity.Description,
+                    Location = eventEntity.Location,
+                    StartTime = eventEntity.StartTime,
+                    EndTime = eventEntity.EndTime,
+                    MaxParticipants = eventEntity.MaxParticipants
+                };
+
+                return RequestResult<EventDto>.Succeed(eventDto);
             }
-
-            var eventDto = new EventDto
+            catch (Exception ex)
             {
-                Id = eventEntity.Id,
-                Name = eventEntity.Name,
-                Description = eventEntity.Description,
-                Location = eventEntity.Location,
-                StartTime = eventEntity.StartTime,
-                EndTime = eventEntity.EndTime,
-                MaxParticipants = eventEntity.MaxParticipants
-            };
-
-            return RequestResult<EventDto>.Succeed(eventDto);
+                return RequestResult<EventDto>.Fail("Có lỗi xảy ra khi lấy thông tin sự kiện.", new[]
+                {
+                    new ErrorItem
+                    {
+                        Error = ex.Message,
+                        FieldName = "EventReadOnlyRepository.GetEventByIdAsync"
+                    }
+                });
+            }
         }
 
         public async Task<RequestResult<IEnumerable<EventDto>>> GetAllEventsAsync(CancellationToken cancellationToken)
         {
-            var events = await _dbContext.Events.AsNoTracking().ToListAsync(cancellationToken);
-            var eventDtos = events.Select(e => new EventDto
+            try
             {
-                Id = e.Id,
-                Name = e.Name,
-                Description = e.Description,
-                Location = e.Location,
-                StartTime = e.StartTime,
-                EndTime = e.EndTime,
-                MaxParticipants = e.MaxParticipants
-            }).ToList();
+                var events = await _dbContext.Events
+                    .AsNoTracking()
+                    .ToListAsync(cancellationToken);
 
-            return RequestResult<IEnumerable<EventDto>>.Succeed(eventDtos);
+                var eventDtos = events.Select(e => new EventDto
+                {
+                    Id = e.Id,
+                    Name = e.Name,
+                    Description = e.Description,
+                    Location = e.Location,
+                    StartTime = e.StartTime,
+                    EndTime = e.EndTime,
+                    MaxParticipants = e.MaxParticipants
+                }).ToList();
+
+                return RequestResult<IEnumerable<EventDto>>.Succeed(eventDtos);
+            }
+            catch (Exception ex)
+            {
+                return RequestResult<IEnumerable<EventDto>>.Fail("Có lỗi xảy ra khi lấy danh sách sự kiện.", new[]
+                {
+                    new ErrorItem
+                    {
+                        Error = ex.Message,
+                        FieldName = "EventReadOnlyRepository.GetAllEventsAsync"
+                    }
+                });
+            }
         }
     }
 }

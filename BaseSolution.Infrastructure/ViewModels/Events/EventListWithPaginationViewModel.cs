@@ -1,4 +1,5 @@
-﻿using BaseSolution.Application.DataTransferObjects.Example.Request;
+﻿using BaseSolution.Application.DataTransferObjects.Event.Request;
+using BaseSolution.Application.DataTransferObjects.Example.Request;
 using BaseSolution.Application.Interfaces.Repositories.ReadOnly;
 using BaseSolution.Application.Interfaces.Services;
 using BaseSolution.Application.ValueObjects.Common;
@@ -12,9 +13,9 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace BaseSolution.Infrastructure.ViewModels.Events
 {
-    public class EventListWithPaginationViewModel : ViewModelBase<ViewExampleWithPaginationRequest>
+    public class EventListWithPaginationViewModel : ViewModelBase<ViewEventWithPaginationRequest> // Sửa lại request đúng kiểu
     {
-        private readonly IEventReadOnlyRepository _eventReadOnlyRepository;
+        public readonly IEventReadOnlyRepository _eventReadOnlyRepository;
         private readonly ILocalizationService _localizationService;
 
         public EventListWithPaginationViewModel(IEventReadOnlyRepository eventReadOnlyRepository, ILocalizationService localizationService)
@@ -23,7 +24,7 @@ namespace BaseSolution.Infrastructure.ViewModels.Events
             _localizationService = localizationService;
         }
 
-        public override async Task HandleAsync(ViewExampleWithPaginationRequest request, CancellationToken cancellationToken)
+        public override async Task HandleAsync(ViewEventWithPaginationRequest request, CancellationToken cancellationToken) // Sửa lại request đúng kiểu
         {
             try
             {

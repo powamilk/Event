@@ -1,5 +1,9 @@
-﻿using BaseSolution.Application.Interfaces.Services;
+﻿using BaseSolution.Application.Interfaces.Repositories.ReadOnly;
+using BaseSolution.Application.Interfaces.Repositories.ReadWrite;
+using BaseSolution.Application.Interfaces.Services;
 using BaseSolution.Infrastructure.Database.AppDbContext;
+using BaseSolution.Infrastructure.Implements.Repositories.ReadOnly;
+using BaseSolution.Infrastructure.Implements.Repositories.ReadWrite;
 using BaseSolution.Infrastructure.Implements.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -35,6 +39,12 @@ namespace BaseSolution.Infrastructure.Extensions
                 // Configure your DbContext options here
                 options.UseSqlServer(configuration.GetConnectionString("DbConnection"));
             });
+
+            services.AddScoped<IOrganizerReadOnlyRepository, OrganizerReadOnlyRepository>();
+            services.AddScoped<IOrganizerReadWriteRepository, OrganizerReadWriteRepository>();
+
+            services.AddScoped<IEventReadOnlyRepository, EventReadOnlyRepository>();
+            services.AddScoped<IEventReadWriteRepository, EventReadWriteRepository>();
 
             services.AddTransient<IStringLocalizerFactory, ResourceManagerStringLocalizerFactory>();
 
