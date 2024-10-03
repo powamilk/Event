@@ -4,6 +4,7 @@ using BaseSolution.Application.DataTransferObjects.Example.Request;
 using BaseSolution.Application.Interfaces.Repositories.ReadOnly;
 using BaseSolution.Application.Interfaces.Repositories.ReadWrite;
 using BaseSolution.Application.Interfaces.Services;
+using BaseSolution.Domain.Entities;
 using BaseSolution.Infrastructure.Implements.Services;
 using BaseSolution.Infrastructure.ViewModels.Events;
 using Microsoft.AspNetCore.Http;
@@ -55,16 +56,17 @@ namespace BaseSolution.API.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateEvent([FromBody] EventCreateRequest request, CancellationToken cancellationToken)
         {
-            var viewModel = new EventCreateViewModel(_eventReadWriteRepository, _localizationService, new MapperConfiguration(cfg => { }).CreateMapper());
+            var viewModel = new EventCreateViewModel(_eventReadWriteRepository, _localizationService);
             await viewModel.HandleAsync(request, cancellationToken);
 
-            if (viewModel.Success)
+            if (viewModel.Success && viewModel.Data is Event createdEvent)
             {
-                return CreatedAtAction(nameof(GetEventById), new { id = viewModel.Data.Id }, viewModel);
+                return CreatedAtAction(nameof(GetEventById), new { id = createdEvent.Id }, viewModel);
             }
 
             return BadRequest(viewModel);
         }
+
 
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateEvent(int id, [FromBody] EventUpdateRequest request, CancellationToken cancellationToken)

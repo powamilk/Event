@@ -17,37 +17,37 @@ namespace BaseSolution.Infrastructure.ViewModels.Events
     {
         private readonly IEventReadWriteRepository _eventReadWriteRepository;
         private readonly ILocalizationService _localizationService;
-        private readonly IMapper _mapper;
 
-        public EventCreateViewModel(IEventReadWriteRepository eventReadWriteRepository, ILocalizationService localizationService, IMapper mapper)
+        public EventCreateViewModel(IEventReadWriteRepository eventReadWriteRepository, ILocalizationService localizationService)
         {
             _eventReadWriteRepository = eventReadWriteRepository;
             _localizationService = localizationService;
-            _mapper = mapper;
         }
 
         public override async Task HandleAsync(EventCreateRequest request, CancellationToken cancellationToken)
         {
-            try
+            var eventEntity = new Event
             {
-                var eventEntity = _mapper.Map<Event>(request);
-                var result = await _eventReadWriteRepository.AddEventAsync(eventEntity, cancellationToken);
+                Name = request.Name,
+                Description = request.Description,
+                Location = request.Location,
+                StartTime = request.StartTime,
+                EndTime = request.EndTime,
+                MaxParticipants = request.MaxParticipants
+            };
 
-                Success = result.Success;
-                ErrorItems = result.Errors;
-                Message = result.Message;
+            var result = await _eventReadWriteRepository.AddEventAsync(eventEntity, cancellationToken);
+
+            if (result.Success)
+            {
+                Data = result.Data; 
+                Success = true;
             }
-            catch (Exception)
+            else
             {
                 Success = false;
-                ErrorItems = new[]
-                {
-                    new ErrorItem
-                    {
-                        Error = _localizationService["Error occurred while creating the Event"],
-                        FieldName = LocalizationString.Common.FailedToCreate + "Event"
-                    }
-                };
+                ErrorItems = result.Errors;
+                Message = result.Message;
             }
         }
     }
