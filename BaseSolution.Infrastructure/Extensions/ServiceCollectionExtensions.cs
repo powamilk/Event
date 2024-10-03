@@ -39,12 +39,17 @@ namespace BaseSolution.Infrastructure.Extensions
                 // Configure your DbContext options here
                 options.UseSqlServer(configuration.GetConnectionString("DbConnection"));
             });
+            services.AddScoped<IParticipantReadOnlyRepository, ParticipantReadOnlyRepository>();
+            services.AddScoped<IParticipantReadWriteRepository, ParticipantReadWriteRepository>();
 
             services.AddScoped<IOrganizerReadOnlyRepository, OrganizerReadOnlyRepository>();
             services.AddScoped<IOrganizerReadWriteRepository, OrganizerReadWriteRepository>();
 
             services.AddScoped<IEventReadOnlyRepository, EventReadOnlyRepository>();
             services.AddScoped<IEventReadWriteRepository, EventReadWriteRepository>();
+
+            services.AddScoped<IRegistrationReadOnlyRepository, RegistrationReadOnlyRepository>();
+            services.AddScoped<IRegistrationReadWriteRepository, RegistrationReadWriteRepository>();
 
             services.AddTransient<IStringLocalizerFactory, ResourceManagerStringLocalizerFactory>();
 
