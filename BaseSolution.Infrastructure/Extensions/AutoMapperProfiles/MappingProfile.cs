@@ -13,6 +13,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using BaseSolution.Application.DataTransferObjects.Review.Request;
+using BaseSolution.Application.DataTransferObjects.Review;
 
 namespace BaseSolution.Infrastructure.Extensions.AutoMapperProfiles
 {
@@ -31,6 +33,11 @@ namespace BaseSolution.Infrastructure.Extensions.AutoMapperProfiles
             CreateMap<Registration, RegistrationDto>();
             CreateMap<RegistrationCreateRequest, Registration>();
             CreateMap<RegistrationUpdateRequest, Registration>();
+            CreateMap<ReviewCreateRequest, Review>().ReverseMap();
+            CreateMap<ReviewUpdateRequest, Review>().ReverseMap();
+            CreateMap<Review, ReviewDto>()
+            .ForMember(dest => dest.EventName, opt => opt.MapFrom(src => src.Event.Name))
+            .ForMember(dest => dest.ParticipantName, opt => opt.MapFrom(src => src.Participant.Name));
         }
     }
 }

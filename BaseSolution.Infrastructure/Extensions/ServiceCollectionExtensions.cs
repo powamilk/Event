@@ -51,6 +51,9 @@ namespace BaseSolution.Infrastructure.Extensions
             services.AddScoped<IRegistrationReadOnlyRepository, RegistrationReadOnlyRepository>();
             services.AddScoped<IRegistrationReadWriteRepository, RegistrationReadWriteRepository>();
 
+            services.AddScoped<IReviewReadOnlyRepository, ReviewReadOnlyRepository>();
+            services.AddScoped<IReviewReadWriteRepository, ReviewReadWriteRepository>();
+
             services.AddTransient<IStringLocalizerFactory, ResourceManagerStringLocalizerFactory>();
 
             services.AddTransient<ILocalizationService, LocalizationService>();

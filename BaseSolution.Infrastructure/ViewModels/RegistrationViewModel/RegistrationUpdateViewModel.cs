@@ -43,7 +43,6 @@ namespace BaseSolution.Infrastructure.ViewModels.RegistrationViewModel
         {
             try
             {
-                // Kiểm tra sự tồn tại của bản ghi đăng ký
                 var existingRegistration = await _registrationReadOnlyRepository.GetRegistrationByIdAsync(request.Id, cancellationToken);
 
                 if (!existingRegistration.Success || existingRegistration.Data == null)
@@ -52,8 +51,6 @@ namespace BaseSolution.Infrastructure.ViewModels.RegistrationViewModel
                     Message = _localizationService["Không tìm thấy đăng ký."];
                     return;
                 }
-
-                // Kiểm tra sự tồn tại của Event và Participant trước khi cập nhật
                 var eventExists = await _eventReadOnlyRepository.GetEventByIdAsync(request.EventId, cancellationToken);
                 if (eventExists == null)
                 {
@@ -69,11 +66,7 @@ namespace BaseSolution.Infrastructure.ViewModels.RegistrationViewModel
                     Message = _localizationService["Người tham gia không tồn tại."];
                     return;
                 }
-
-                // Map request thành entity
                 var registrationEntity = _mapper.Map<Registration>(request);
-
-                // Cập nhật đăng ký
                 var result = await _registrationReadWriteRepository.UpdateRegistrationAsync(registrationEntity, cancellationToken);
 
                 if (result.Success)
@@ -95,7 +88,7 @@ namespace BaseSolution.Infrastructure.ViewModels.RegistrationViewModel
                 {
             new ErrorItem
             {
-                Error = ex.InnerException?.Message ?? ex.Message, // Lấy thông tin từ InnerException nếu có
+                Error = ex.InnerException?.Message ?? ex.Message,
                 FieldName = "UpdateRegistrationAsync"
             }
         };
