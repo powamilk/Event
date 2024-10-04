@@ -1,10 +1,21 @@
-﻿using BaseSolution.Application.Interfaces.Repositories.ReadOnly;
+﻿using BaseSolution.Application.DataTransferObjects.Event.Request;
+using BaseSolution.Application.DataTransferObjects.Organizer.Request;
+using BaseSolution.Application.DataTransferObjects.Participant.Request;
+using BaseSolution.Application.DataTransferObjects.Registration.Request;
+using BaseSolution.Application.DataTransferObjects.Review.Request;
+using BaseSolution.Application.Interfaces.Repositories.ReadOnly;
 using BaseSolution.Application.Interfaces.Repositories.ReadWrite;
 using BaseSolution.Application.Interfaces.Services;
 using BaseSolution.Infrastructure.Database.AppDbContext;
+using BaseSolution.Infrastructure.Extensions.Validator.EventValidator;
+using BaseSolution.Infrastructure.Extensions.Validator.Organizer;
+using BaseSolution.Infrastructure.Extensions.Validator.ParticipantValidator;
+using BaseSolution.Infrastructure.Extensions.Validator.RegistrationsValidator;
+using BaseSolution.Infrastructure.Extensions.Validator.ReviewValidator;
 using BaseSolution.Infrastructure.Implements.Repositories.ReadOnly;
 using BaseSolution.Infrastructure.Implements.Repositories.ReadWrite;
 using BaseSolution.Infrastructure.Implements.Services;
+using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -53,6 +64,17 @@ namespace BaseSolution.Infrastructure.Extensions
 
             services.AddScoped<IReviewReadOnlyRepository, ReviewReadOnlyRepository>();
             services.AddScoped<IReviewReadWriteRepository, ReviewReadWriteRepository>();
+
+            services.AddTransient<IValidator<EventCreateRequest>, EventCreateValidator>();
+            services.AddTransient<IValidator<EventUpdateRequest>, EventUpdateValidator>();
+            services.AddTransient<IValidator<OrganizerCreateRequest>, OrganizerCreateValidator>();
+            services.AddTransient<IValidator<OrganizerUpdateRequest>, OrganizerUpdateValidator>();
+            services.AddTransient<IValidator<ParticipantCreateRequest>, ParticipantCreateValidator>();
+            services.AddTransient<IValidator<ParticipantUpdateRequest>, ParticipantUpdateValidator>();
+            services.AddTransient<IValidator<RegistrationCreateRequest>, RegistrationCreateValidator>();
+            services.AddTransient<IValidator<RegistrationUpdateRequest>, RegistrationUpdateValidator>();
+            services.AddTransient<IValidator<ReviewCreateRequest>, ReviewCreateValidator>();
+            services.AddTransient<IValidator<ReviewUpdateRequest>, ReviewUpdateValidator>();
 
             services.AddTransient<IStringLocalizerFactory, ResourceManagerStringLocalizerFactory>();
 

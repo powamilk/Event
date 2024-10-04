@@ -5,6 +5,7 @@ using BaseSolution.Application.Interfaces.Repositories.ReadWrite;
 using BaseSolution.Application.Interfaces.Services;
 using BaseSolution.Domain.Entities;
 using BaseSolution.Infrastructure.ViewModels.OrganizerViewModel;
+using FluentValidation;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -18,17 +19,23 @@ namespace BaseSolution.API.Controllers
         private readonly IOrganizerReadWriteRepository _organizerReadWriteRepository;
         private readonly ILocalizationService _localizationService;
         private readonly IMapper _mapper;
+        private readonly IValidator<OrganizerCreateRequest> _createValidator;
+        private readonly IValidator<OrganizerUpdateRequest> _updateValidator;
 
         public OrganizerController(
             IOrganizerReadOnlyRepository organizerReadOnlyRepository,
             IOrganizerReadWriteRepository organizerReadWriteRepository,
             ILocalizationService localizationService,
-            IMapper mapper)
+            IMapper mapper,
+            IValidator<OrganizerCreateRequest> createValidator,
+            IValidator<OrganizerUpdateRequest> updateValidator)
         {
             _organizerReadOnlyRepository = organizerReadOnlyRepository;
             _organizerReadWriteRepository = organizerReadWriteRepository;
             _localizationService = localizationService;
             _mapper = mapper;
+            _createValidator = createValidator;
+            _updateValidator = updateValidator;
         }
 
         [HttpGet]
@@ -104,6 +111,22 @@ namespace BaseSolution.API.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateOrganizer([FromBody] OrganizerCreateRequest request, CancellationToken cancellationToken)
         {
+            var validationResult = await _createValidator.ValidateAsync(request, cancellationToken);
+
+            if (!validationResult.IsValid)
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    message = "Thông tin người tổ chức không hợp lệ",
+                    error_items = validationResult.Errors.Select(e => new
+                    {
+                        field = e.PropertyName,
+                        error = e.ErrorMessage
+                    })
+                });
+            }
+
             var viewModel = new OrganizerCreateViewModel(_organizerReadWriteRepository, _localizationService);
             await viewModel.HandleAsync(request, cancellationToken);
 
@@ -127,45 +150,49 @@ namespace BaseSolution.API.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateOrganizer(int id, [FromBody] OrganizerUpdateRequest updateRequest, CancellationToken cancellationToken)
         {
-            try
+            if (id != updateRequest.Id)
             {
-                if (id != updateRequest.Id)
-                {
-                    return BadRequest(new
-                    {
-                        success = false,
-                        message = "ID của người tổ chức không khớp."
-                    });
-                }
-
-                var viewModel = new OrganizerUpdateViewModel(_organizerReadWriteRepository, _localizationService, _mapper);
-                await viewModel.HandleAsync(updateRequest, cancellationToken);
-
-                if (viewModel.Success)
-                {
-                    return Ok(new
-                    {
-                        success = true,
-                        message = "Cập nhật thông tin người tổ chức thành công."
-                    });
-                }
-
-                return NotFound(new
+                return BadRequest(new
                 {
                     success = false,
-                    message = "Không tìm thấy người tổ chức.",
-                    error_items = viewModel.ErrorItems
+                    message = "ID của người tổ chức không khớp."
                 });
             }
-            catch (Exception ex)
+
+            var validationResult = await _updateValidator.ValidateAsync(updateRequest, cancellationToken);
+
+            if (!validationResult.IsValid)
             {
-                return StatusCode(500, new
+                return BadRequest(new
                 {
                     success = false,
-                    message = "Đã xảy ra lỗi khi cập nhật người tổ chức.",
-                    error = ex.Message
+                    message = "Thông tin người tổ chức không hợp lệ",
+                    error_items = validationResult.Errors.Select(e => new
+                    {
+                        field = e.PropertyName,
+                        error = e.ErrorMessage
+                    })
                 });
             }
+
+            var viewModel = new OrganizerUpdateViewModel(_organizerReadWriteRepository, _localizationService, _mapper);
+            await viewModel.HandleAsync(updateRequest, cancellationToken);
+
+            if (viewModel.Success)
+            {
+                return Ok(new
+                {
+                    success = true,
+                    message = "Cập nhật thông tin người tổ chức thành công."
+                });
+            }
+
+            return NotFound(new
+            {
+                success = false,
+                message = "Không tìm thấy người tổ chức.",
+                error_items = viewModel.ErrorItems
+            });
         }
 
         [HttpDelete("{id}")]

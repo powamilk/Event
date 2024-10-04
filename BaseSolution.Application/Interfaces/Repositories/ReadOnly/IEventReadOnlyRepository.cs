@@ -12,5 +12,8 @@ namespace BaseSolution.Application.Interfaces.Repositories.ReadOnly
     {
         Task<RequestResult<EventDto>> GetEventByIdAsync(int id, CancellationToken cancellationToken);
         Task<RequestResult<IEnumerable<EventDto>>> GetAllEventsAsync(CancellationToken cancellationToken);
+        Task<IEnumerable<EventDto>> SearchEventsAsync(string name, string location, DateTime? startDate, DateTime? endDate, CancellationToken cancellationToken);
+        Task<IEnumerable<EventDto>> FilterEventsByStatusAsync(string status, CancellationToken cancellationToken);
+        Task<EventStatsDto> GetEventStatsAsync(DateTime? startDate, DateTime? endDate, string status, CancellationToken cancellationToken);
     }
 }

@@ -93,5 +93,140 @@ namespace BaseSolution.Infrastructure.Implements.Repositories.ReadOnly
                 });
             }
         }
+
+        public async Task<IEnumerable<EventDto>> SearchEventsAsync(string name, string location, DateTime? startDate, DateTime? endDate, CancellationToken cancellationToken)
+        {
+            var query = _dbContext.Events.AsQueryable();
+
+            if (!string.IsNullOrEmpty(name))
+            {
+                query = query.Where(e => e.Name.Contains(name));
+            }
+
+            if (!string.IsNullOrEmpty(location))
+            {
+                query = query.Where(e => e.Location.Contains(location));
+            }
+
+            if (startDate.HasValue)
+            {
+                query = query.Where(e => e.StartTime >= startDate.Value);
+            }
+
+            if (endDate.HasValue)
+            {
+                query = query.Where(e => e.EndTime <= endDate.Value);
+            }
+
+            var result = await query.Select(e => new EventDto
+            {
+                Id = e.Id,
+                Name = e.Name,
+                Description = e.Description,
+                Location = e.Location,
+                StartTime = e.StartTime,
+                EndTime = e.EndTime,
+                MaxParticipants = e.MaxParticipants
+            }).ToListAsync(cancellationToken);
+
+            return result;
+        }
+
+        public async Task<IEnumerable<EventDto>> FilterEventsByStatusAsync(string status, CancellationToken cancellationToken)
+        {
+            var currentTime = DateTime.UtcNow; 
+
+            var query = _dbContext.Events.AsQueryable();
+
+            if (status == "ongoing")
+            {
+                query = query.Where(e => e.StartTime <= currentTime && e.EndTime >= currentTime);
+            }
+            else if (status == "completed")
+            {
+                query = query.Where(e => e.EndTime < currentTime);
+            }
+            else if (status == "upcoming")
+            {
+                query = query.Where(e => e.StartTime > currentTime);
+            }
+
+            var result = await query
+                .Select(e => new EventDto
+                {
+                    Id = e.Id,
+                    Name = e.Name,
+                    Description = e.Description,
+                    Location = e.Location,
+                    StartTime = e.StartTime,
+                    EndTime = e.EndTime,
+                    MaxParticipants = e.MaxParticipants
+                }).ToListAsync(cancellationToken);
+
+            return result;
+        }
+
+
+        public async Task<EventStatsDto> GetEventStatsAsync(DateTime? startDate, DateTime? endDate, string status, CancellationToken cancellationToken)
+        {
+            var currentTime = DateTime.UtcNow;
+            var query = _dbContext.Events.AsQueryable();
+
+            if (startDate.HasValue)
+            {
+                query = query.Where(e => e.StartTime >= startDate.Value);
+            }
+
+            if (endDate.HasValue)
+            {
+                query = query.Where(e => e.EndTime <= endDate.Value);
+            }
+
+            if (!string.IsNullOrEmpty(status))
+            {
+                if (status == "ongoing")
+                {
+                    query = query.Where(e => e.StartTime <= currentTime && e.EndTime >= currentTime);
+                }
+                else if (status == "completed")
+                {
+                    query = query.Where(e => e.EndTime < currentTime);
+                }
+                else if (status == "upcoming")
+                {
+                    query = query.Where(e => e.StartTime > currentTime);
+                }
+            }
+
+            var totalEvents = await query.CountAsync(cancellationToken);
+            var totalParticipants = await query.SumAsync(e => e.MaxParticipants, cancellationToken);
+            var averageParticipantsPerEvent = totalEvents > 0 ? totalParticipants / (double)totalEvents : 0;
+            var eventsByStatus = await query
+                .GroupBy(e => new
+                {
+                    Status = e.StartTime <= currentTime && e.EndTime >= currentTime ? "ongoing" :
+                             e.EndTime < currentTime ? "completed" : "upcoming"
+                })
+                .Select(group => new EventStatusStats
+                {
+                    Status = group.Key.Status,
+                    Count = group.Count(),
+                    Participants = group.Sum(e => e.MaxParticipants)
+                }).ToListAsync(cancellationToken);
+
+            return new EventStatsDto
+            {
+                TotalEvents = totalEvents,
+                TotalParticipants = totalParticipants,
+                AverageParticipantsPerEvent = averageParticipantsPerEvent,
+                EventsByStatus = eventsByStatus,
+                EventsInDateRange = new EventsInDateRangeDto
+                {
+                    Count = totalEvents,
+                    Participants = totalParticipants
+                }
+            };
+        }
+
     }
 }

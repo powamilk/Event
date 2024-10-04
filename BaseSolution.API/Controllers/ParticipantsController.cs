@@ -5,6 +5,7 @@ using BaseSolution.Application.Interfaces.Repositories.ReadWrite;
 using BaseSolution.Application.Interfaces.Services;
 using BaseSolution.Domain.Entities;
 using BaseSolution.Infrastructure.ViewModels.ParticipantViewModel;
+using FluentValidation;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -18,17 +19,23 @@ namespace BaseSolution.API.Controllers
         private readonly IParticipantReadWriteRepository _participantReadWriteRepository;
         private readonly ILocalizationService _localizationService;
         private readonly IMapper _mapper;
+        private readonly IValidator<ParticipantCreateRequest> _createValidator;
+        private readonly IValidator<ParticipantUpdateRequest> _updateValidator;
 
         public ParticipantsController(
             IParticipantReadOnlyRepository participantReadOnlyRepository,
             IParticipantReadWriteRepository participantReadWriteRepository,
             ILocalizationService localizationService,
-            IMapper mapper)
+            IMapper mapper,
+            IValidator<ParticipantCreateRequest> createValidator,
+            IValidator<ParticipantUpdateRequest> updateValidator)
         {
             _participantReadOnlyRepository = participantReadOnlyRepository;
             _participantReadWriteRepository = participantReadWriteRepository;
             _localizationService = localizationService;
             _mapper = mapper;
+            _createValidator = createValidator;
+            _updateValidator = updateValidator;
         }
 
         [HttpGet]
@@ -102,6 +109,22 @@ namespace BaseSolution.API.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateParticipant([FromBody] ParticipantCreateRequest request, CancellationToken cancellationToken)
         {
+            var validationResult = await _createValidator.ValidateAsync(request, cancellationToken);
+
+            if (!validationResult.IsValid)
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    message = "Thông tin người tham gia không hợp lệ.",
+                    error_items = validationResult.Errors.Select(e => new
+                    {
+                        field = e.PropertyName,
+                        error = e.ErrorMessage
+                    })
+                });
+            }
+
             var vm = new ParticipantCreateViewModel(_participantReadWriteRepository, _localizationService);
             await vm.HandleAsync(request, cancellationToken);
 
@@ -122,7 +145,6 @@ namespace BaseSolution.API.Controllers
             });
         }
 
-
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateParticipant(int id, [FromBody] ParticipantUpdateRequest request, CancellationToken cancellationToken)
         {
@@ -135,35 +157,40 @@ namespace BaseSolution.API.Controllers
                 });
             }
 
-            try
-            {
-                var vm = new ParticipantUpdateViewModel(_participantReadWriteRepository, _localizationService, _mapper);
-                await vm.HandleAsync(request, cancellationToken);
+            var validationResult = await _updateValidator.ValidateAsync(request, cancellationToken);
 
-                if (vm.Success)
+            if (!validationResult.IsValid)
+            {
+                return BadRequest(new
                 {
-                    return Ok(new
+                    success = false,
+                    message = "Thông tin người tham gia không hợp lệ.",
+                    error_items = validationResult.Errors.Select(e => new
                     {
-                        success = true,
-                        message = "Cập nhật người tham gia thành công."
-                    });
-                }
+                        field = e.PropertyName,
+                        error = e.ErrorMessage
+                    })
+                });
+            }
 
-                return NotFound(new
-                {
-                    success = false,
-                    message = "Không tìm thấy người tham gia.",
-                    error_items = vm.ErrorItems
-                });
-            }
-            catch (Exception ex)
+            var vm = new ParticipantUpdateViewModel(_participantReadWriteRepository, _localizationService, _mapper);
+            await vm.HandleAsync(request, cancellationToken);
+
+            if (vm.Success)
             {
-                return StatusCode(500, new
+                return Ok(new
                 {
-                    success = false,
-                    message = "Lỗi máy chủ: " + ex.Message
+                    success = true,
+                    message = "Cập nhật người tham gia thành công."
                 });
             }
+
+            return NotFound(new
+            {
+                success = false,
+                message = "Không tìm thấy người tham gia.",
+                error_items = vm.ErrorItems
+            });
         }
 
         [HttpDelete("{id}")]

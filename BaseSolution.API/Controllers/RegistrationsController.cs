@@ -5,6 +5,7 @@ using BaseSolution.Application.Interfaces.Repositories.ReadWrite;
 using BaseSolution.Application.Interfaces.Services;
 using BaseSolution.Infrastructure.Implements.Repositories.ReadOnly;
 using BaseSolution.Infrastructure.ViewModels.RegistrationViewModel;
+using FluentValidation;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -19,7 +20,9 @@ namespace BaseSolution.API.Controllers
         private readonly IEventReadOnlyRepository _eventReadOnlyRepository;
         private readonly IParticipantReadOnlyRepository _participantReadOnlyRepository;
         private readonly ILocalizationService _localizationService;
-        private readonly IMapper _mapper;  
+        private readonly IMapper _mapper;
+        private readonly IValidator<RegistrationCreateRequest> _createValidator;
+        private readonly IValidator<RegistrationUpdateRequest> _updateValidator;
 
         public RegistrationsController(
             IRegistrationReadWriteRepository registrationReadWriteRepository,
@@ -27,14 +30,18 @@ namespace BaseSolution.API.Controllers
             IEventReadOnlyRepository eventReadOnlyRepository,
             IParticipantReadOnlyRepository participantReadOnlyRepository,
             ILocalizationService localizationService,
-            IMapper mapper)  
+            IMapper mapper,
+            IValidator<RegistrationCreateRequest> createValidator,
+            IValidator<RegistrationUpdateRequest> updateValidator)
         {
             _registrationReadWriteRepository = registrationReadWriteRepository;
             _registrationReadOnlyRepository = registrationReadOnlyRepository;
             _eventReadOnlyRepository = eventReadOnlyRepository;
             _participantReadOnlyRepository = participantReadOnlyRepository;
             _localizationService = localizationService;
-            _mapper = mapper;  
+            _mapper = mapper;
+            _createValidator = createValidator;
+            _updateValidator = updateValidator;
         }
 
         [HttpGet]
@@ -87,6 +94,17 @@ namespace BaseSolution.API.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateRegistration([FromBody] RegistrationCreateRequest request, CancellationToken cancellationToken)
         {
+            var validationResult = await _createValidator.ValidateAsync(request, cancellationToken);
+            if (!validationResult.IsValid)
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    message = "Thông tin đăng ký không hợp lệ.",
+                    error_items = validationResult.Errors.Select(e => new { field = e.PropertyName, error = e.ErrorMessage })
+                });
+            }
+
             try
             {
                 var vm = new RegistrationCreateViewModel(_registrationReadWriteRepository, _localizationService);
@@ -94,10 +112,19 @@ namespace BaseSolution.API.Controllers
 
                 if (vm.Success)
                 {
-                    return CreatedAtAction(nameof(GetRegistrationById), new { id = vm.Data }, vm);
+                    return CreatedAtAction(nameof(GetRegistrationById), new { id = vm.Data }, new
+                    {
+                        success = true,
+                        data = vm.Data
+                    });
                 }
 
-                return BadRequest(new { success = false, message = "Tạo đăng ký thất bại.", error_items = vm.ErrorItems });
+                return BadRequest(new
+                {
+                    success = false,
+                    message = "Tạo đăng ký thất bại.",
+                    error_items = vm.ErrorItems
+                });
             }
             catch (Exception ex)
             {
@@ -106,11 +133,22 @@ namespace BaseSolution.API.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateRegistration(int id, [FromBody] RegistrationUpdateRequest updateRequest)
+        public async Task<IActionResult> UpdateRegistration(int id, [FromBody] RegistrationUpdateRequest updateRequest, CancellationToken cancellationToken)
         {
             if (id != updateRequest.Id)
             {
                 return BadRequest(new { success = false, message = "Mã đăng ký không khớp." });
+            }
+
+            var validationResult = await _updateValidator.ValidateAsync(updateRequest, cancellationToken);
+            if (!validationResult.IsValid)
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    message = "Thông tin đăng ký không hợp lệ.",
+                    error_items = validationResult.Errors.Select(e => new { field = e.PropertyName, error = e.ErrorMessage })
+                });
             }
 
             try
@@ -118,13 +156,13 @@ namespace BaseSolution.API.Controllers
                 var viewModel = new RegistrationUpdateViewModel(
                     _registrationReadWriteRepository,
                     _registrationReadOnlyRepository,
-                    _eventReadOnlyRepository,  
-                    _participantReadOnlyRepository, 
+                    _eventReadOnlyRepository,
+                    _participantReadOnlyRepository,
                     _localizationService,
                     _mapper
                 );
 
-                await viewModel.HandleAsync(updateRequest, CancellationToken.None);
+                await viewModel.HandleAsync(updateRequest, cancellationToken);
 
                 if (!viewModel.Success)
                 {
@@ -136,11 +174,11 @@ namespace BaseSolution.API.Controllers
                     });
                 }
 
-                return Ok(new { success = true, message = "Cập nhật thành công." });
+                return Ok(new { success = true, message = "Cập nhật đăng ký thành công." });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { success = false, message = "Đã xảy ra lỗi khi cập nhật thông tin đăng ký.", error = ex.Message });
+                return StatusCode(500, new { success = false, message = "Đã xảy ra lỗi khi cập nhật đăng ký.", error = ex.Message });
             }
         }
 
